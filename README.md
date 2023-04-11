@@ -18,7 +18,27 @@ Deploys AWS CloudFormation Stacks.
 
 The action can be passed a CloudFormation Stack `name` and a `template` file. The `template` file can be a local file existing in the working directory, or a URL to template that exists in an [Amazon S3](https://aws.amazon.com/s3/) bucket. It will create the Stack if it does not exist, or create a [Change Set](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-changesets.html) to update the Stack. An update fails by default when the Change Set is empty. Setting `no-fail-on-empty-changeset: "1"` will override this behavior and not throw an error.
 
-See [action.yml](action.yml) for the full documentation for this action's inputs and outputs.
+### Inputs
+
+A few inputs are highlighted below. See [action.yml](action.yml) for the full documentation for this action's inputs and outputs.
+
+#### parameter-overrides (OPTIONAL)
+
+To override parameter values in the template you can provide a string or a file that is either local or an URL.
+
+Override multiple parameters separated by commas: `"MyParam1=myValue1,MyParam2=myValue2"`
+
+Override a comma delimited list: `"MyParam1=myValue1,MyParam1=myValue2"` or `MyParam1="myValue1,myValue2"`
+
+Override parameters using a local JSON file: `"file:///${{ github.workspace }}/parameters.json"` with a file named `parameters.json` at the root of the repository:
+```json
+[
+  {
+    "ParameterKey": "MyParam1",
+    "ParameterValue": "myValue1"
+  }
+]
+```
 
 > You can learn more about [AWS CloudFormation](https://aws.amazon.com/cloudformation/)
 
@@ -39,7 +59,7 @@ We recommend following [Amazon IAM best practices](https://docs.aws.amazon.com/I
 
 This action requires the following minimum set of permissions:
 
-> We recommend to read [AWS CloudFormation Security Best Practices](https://aws.amazon.com/blogs/devops/aws-cloudformation-security-best-practices/)
+> We recommend to read [AWS CloudFormation Security Best Practices](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/best-practices.html)
 
 ```
 {
@@ -108,7 +128,7 @@ jobs:
       run: |
         ENVIRONMENT=`echo $REPO | tr "/" "-"`
         echo "Environment name: $ENVIRONMENT"
-        echo "::set-output name=environment::$ENVIRONMENT"
+        echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
 
     - name: Deploy Amazon EKS Cluster
       id: eks-cluster
@@ -128,6 +148,31 @@ jobs:
           RemoteAccessCIDR=0.0.0.0/0
 
 ```
+
+### Proxy Configuration
+
+If you run in self-hosted environments and in secured environment where you need use a specific proxy you can set it in the action manually.
+
+Additionally this action will always consider already configured proxy in the environment.
+
+Manually configured proxy:
+```yaml
+uses: aws-actions/aws-cloudformation-github-deploy@v1
+with:
+  name: eks-primary
+  template: https://s3.amazonaws.com/aws-quickstart/quickstart-amazon-eks/templates/amazon-eks-master.template.yaml
+  no-fail-on-empty-changeset: "1"
+  http-proxy: "http://companydomain.com:3128"
+```
+
+Proxy configured in the environment variable:
+
+```bash
+# Your environment configuration
+HTTP_PROXY="http://companydomain.com:3128"
+```
+
+The action will read the underlying proxy configuration from the environment and you don't need to configure it in the action.
 
 ## License
 
